@@ -26,7 +26,7 @@ import cn.sysmaster.kline.entity.KLineBean;
 import cn.sysmaster.kline.view.KLineChartView;
 import okhttp3.Call;
 
-public class KLineChartFragment extends Fragment {
+public class KLineChartFragment extends Fragment implements KLineChartView.OnValueSelectedListener {
 
     private KLineChartView mChartView;
 
@@ -44,6 +44,7 @@ public class KLineChartFragment extends Fragment {
 
     private void initView(View view) {
         mChartView = view.findViewById(R.id.kline_chart_view);
+        mChartView.setOnValueSelectedListener(this);
         requestKlineData();
     }
 
@@ -76,5 +77,10 @@ public class KLineChartFragment extends Fragment {
                         }
                     }
                 });
+    }
+
+    @Override
+    public void onValueSelected(boolean isSelected, KLineBean data) {
+        ((ChartDataFragment) getParentFragment()).setValue(isSelected, data);
     }
 }

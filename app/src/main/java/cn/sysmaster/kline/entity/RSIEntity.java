@@ -20,76 +20,51 @@ public class RSIEntity {
     }
 
     /**
-     * @param kLineBeens
-     * @param n          几日
-     * @param defult     不足N日时的默认值
+     * @param list
+     * @param days   几日
+     * @param defult 不足N日时的默认值
      */
-    public RSIEntity(List<KLineBean> kLineBeens, int n, float defult) {
-        RSIs = new ArrayList<>();
-        float sum = 0.0f;
-        float dif = 0.0f;
-        float rs = 0.0f;
-        float rsi = 0.0f;
-        int index = n - 1;
-        if (kLineBeens != null && kLineBeens.size() > 0) {
-            for (int i = 0; i < kLineBeens.size(); i++) {
-                //                if (i > 0) {
-                if (n == 0) {
-                    sum = 0.0f;
-                    dif = 0.0f;
-                } else {
-                    int k = i - n + 1;
-                    Float[] wrs = getAAndB(k, i, (ArrayList<KLineBean>) kLineBeens);
-                    sum = wrs[0];
-                    dif = wrs[1];
-                }
-                //                }
-                if (dif != 0) {
-                    //                    rs = sum / dif;
-                    //                    float c = 100 / (1 + rs);
-                    //                    rsi = 100 - c;
+    public RSIEntity(List<KLineBean> list, int days, float defult) {
+        RSIs = new ArrayList();
 
-                    float h = sum + dif;
-                    rsi = sum / h * 100;
-                } else {
-                    rsi = 100;
-                }
-
-                if (i < index) {
-                    rsi = defult;
-                }
-                RSIs.add(rsi);
-            }
+        if (list == null) {
+            return;
+        }
+        if (days > list.size()) {
+            return;
+        }
+        //默认0
+        float smaMax = 0, smaAbs = 0;
+        float lc = 0;
+        float close = 0;
+        float rsi = 0;
+        for (int i = 1; i < list.size(); i++) {
+            KLineBean entity = list.get(i);
+            lc = list.get(i - 1).c;
+            close = entity.c;
+            smaMax = countSMA((float) Math.max(close - lc, 0d), days, 1, smaMax);
+            smaAbs = countSMA(Math.abs(close - lc), days, 1, smaAbs);
+            rsi = smaMax / smaAbs * 100;
+            RSIs.add(rsi);
+        }
+        int size = list.size() - RSIs.size();
+        for (int i = 0; i < size; i++) {
+            RSIs.add(0, 0f);
         }
     }
 
-    private Float[] getAAndB(Integer a, Integer b, ArrayList<KLineBean> kLineBeens) {
-        if (a < 0) {
-            a = 0;
-        }
-        float sum = 0.0f;
-        float dif = 0.0f;
-        float closeT, closeY;
-        Float[] abs = new Float[2];
-        for (int i = a; i <= b; i++) {
-            if (i > a) {
-                closeT = kLineBeens.get(i).c;
-                closeY = kLineBeens.get(i - 1).c;
-
-                float c = closeT - closeY;
-                if (c > 0) {
-                    sum = sum + c;
-                } else {
-                    dif = sum + c;
-                }
-
-                dif = Math.abs(dif);
-            }
-        }
-
-        abs[0] = sum;
-        abs[1] = dif;
-        return abs;
+    /**
+     * SMA(C,N,M) = (M*C+(N-M)*Y')/N
+     * C=今天收盘价－昨天收盘价    N＝就是周期比如 6或者12或者24， M＝权重，其实就是1
+     *
+     * @param c   今天收盘价－昨天收盘价
+     * @param n   周期
+     * @param m   1
+     * @param sma 上一个周期的sma
+     * @return
+     */
+    public static float countSMA(float c, float n, float m, float sma) {
+        return (m * c + (n - m) * sma) / n;
     }
 
     public ArrayList<Float> getRSIs() {

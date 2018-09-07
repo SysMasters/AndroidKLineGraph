@@ -2,14 +2,19 @@ package cn.sysmaster.kline.view;
 
 import android.content.Context;
 import android.graphics.Paint;
+import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
+import android.text.Html;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.widget.FrameLayout;
+import android.widget.TextView;
 
 import com.github.mikephil.charting.charts.CombinedChart;
+import com.github.mikephil.charting.components.AxisBase;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.BarData;
@@ -21,24 +26,36 @@ import com.github.mikephil.charting.data.CombinedData;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
+import com.github.mikephil.charting.formatter.IAxisValueFormatter;
+import com.github.mikephil.charting.highlight.Highlight;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
+import com.github.mikephil.charting.listener.ChartTouchListener;
+import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
 
+import java.text.DecimalFormat;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 
 import cn.sysmaster.kline.R;
 import cn.sysmaster.kline.entity.DataParse;
+import cn.sysmaster.kline.entity.KLineBean;
+import cn.sysmaster.kline.listener.ChartInfoViewHandler;
+import cn.sysmaster.kline.listener.CoupleChartGestureListener;
+import cn.sysmaster.kline.util.DateUtil;
 
 /**
  * @author wanglibo
  * @date 2018/8/31
  * @describe
  */
-public class KLineChartView extends FrameLayout {
+public class KLineChartView extends FrameLayout implements OnChartValueSelectedListener {
 
     private CombinedChart mMainChart, mSubChart;
     private MainGraphTextView mMainText;
     private SubGraphTextView mSubText;
+    private TextView mTvMainValue, mTvSubValue;
+
 
     /**
      * 柱状图颜色
@@ -56,6 +73,8 @@ public class KLineChartView extends FrameLayout {
 
     private DataParse mData;
 
+    private DecimalFormat mDecimalFormat = new DecimalFormat("0.00");
+
     public KLineChartView(@NonNull Context context) {
         this(context, null);
     }
@@ -72,8 +91,8 @@ public class KLineChartView extends FrameLayout {
 
     private void init() {
         // 颜色数据
-        mRiseColor = ContextCompat.getColor(getContext(), R.color.trend_red);
-        mDropColor = ContextCompat.getColor(getContext(), R.color.trend_green);
+        mRiseColor = ContextCompat.getColor(getContext(), R.color.trend_rise);
+        mDropColor = ContextCompat.getColor(getContext(), R.color.trend_drop);
         mMa5Color = ContextCompat.getColor(getContext(), R.color.trend_ma5);
         mMa10Color = ContextCompat.getColor(getContext(), R.color.trend_ma10);
         mMa20Color = ContextCompat.getColor(getContext(), R.color.trend_ma20);
@@ -127,6 +146,52 @@ public class KLineChartView extends FrameLayout {
         mSubChart = findViewById(R.id.sub_chart);
         mMainText = findViewById(R.id.tv_main_text);
         mSubText = findViewById(R.id.tv_sub_text);
+        mTvMainValue = findViewById(R.id.tv_main_value);
+        mTvSubValue = findViewById(R.id.tv_sub_value);
+        initChartStyle(mMainChart);
+        initChartStyle(mSubChart);
+        // 显示副图x轴时间
+        mSubChart.getXAxis().setDrawLabels(true);
+        // 格式化时间
+        mSubChart.getXAxis().setValueFormatter(new IAxisValueFormatter() {
+            @Override
+            public String getFormattedValue(float value, AxisBase axis) {
+                return DateUtil.timeStamp2Date(mData.getDatas().get((int) value).t);
+            }
+        });
+        setChartListener();
+    }
+
+    /**
+     * 设置监听
+     */
+    private void setChartListener() {
+        mMainChart.setOnChartGestureListener(new CoupleChartGestureListener(mMainChart, mSubChart) {
+            @Override
+            public void onChartSingleTapped(MotionEvent me) {
+                super.onChartSingleTapped(me);
+                mMainText.performClick();
+            }
+
+            @Override
+            public void onChartGestureEnd(MotionEvent me, ChartTouchListener.ChartGesture lastPerformedGesture) {
+                super.onChartGestureEnd(me, lastPerformedGesture);
+                onNothingSelected();
+            }
+        });
+        mSubChart.setOnChartGestureListener(new CoupleChartGestureListener(mSubChart, mMainChart) {
+            @Override
+            public void onChartSingleTapped(MotionEvent me) {
+                super.onChartSingleTapped(me);
+                mSubText.performClick();
+            }
+
+            @Override
+            public void onChartGestureEnd(MotionEvent me, ChartTouchListener.ChartGesture lastPerformedGesture) {
+                super.onChartGestureEnd(me, lastPerformedGesture);
+                onNothingSelected();
+            }
+        });
         mMainText.setOnSwitchClickListener(new SwitchTextView.OnSwitchClickListener() {
             @Override
             public void onSwitch() {
@@ -139,10 +204,12 @@ public class KLineChartView extends FrameLayout {
                 loadSubChartData();
             }
         });
-
-        initChartStyle(mMainChart);
-        initChartStyle(mSubChart);
+        mMainChart.setOnChartValueSelectedListener(this);
+        mSubChart.setOnChartValueSelectedListener(this);
+        mMainChart.setOnTouchListener(new ChartInfoViewHandler(mMainChart));
+        mSubChart.setOnTouchListener(new ChartInfoViewHandler(mSubChart));
     }
+
 
     /**
      * 设置k线图数据
@@ -197,11 +264,19 @@ public class KLineChartView extends FrameLayout {
         // x轴,网格线
         XAxis xAxis = chart.getXAxis();
         xAxis.setDrawGridLines(true);
-        // 设置位置
-        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM_INSIDE);
-        xAxis.setDrawLabels(false);
+        // 设置位置,底部外侧
+        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
+        // 设置首尾的值是否自动调整，避免被遮挡
+        xAxis.setAvoidFirstLastClipping(true);
+        // 是否绘制坐标轴的线，即含有坐标的那条线，默认是true
+        xAxis.setDrawAxisLine(false);
+        // 在缩放时为轴设置最小间隔
+        xAxis.setGranularity(5);
+        // 设置x轴文字最多显示4条
+        xAxis.setLabelCount(4);
         // 设置网格线颜色
         xAxis.setGridColor(gridColor);
+        xAxis.setDrawLabels(false);
     }
 
     /**
@@ -212,6 +287,7 @@ public class KLineChartView extends FrameLayout {
         // github  issues/2553,2641
         chart.getXAxis().setAxisMinimum(data.getXMin() - 0.5f);
         chart.getXAxis().setAxisMaximum(data.getXMax() + 0.5f);
+        chart.setData(null);
         chart.setData(data);
 
         chart.notifyDataSetChanged();
@@ -279,9 +355,9 @@ public class KLineChartView extends FrameLayout {
      */
     private LineData generateMaData() {
         List<ILineDataSet> lineDataSets = new ArrayList<>();
-        lineDataSets.add(setMaLine(5, mData.getMa5Data()));
-        lineDataSets.add(setMaLine(10, mData.getMa10Data()));
-        lineDataSets.add(setMaLine(20, mData.getMa20Data()));
+        lineDataSets.add(setLineDataSet(0, mData.getMa5Data()));
+        lineDataSets.add(setLineDataSet(1, mData.getMa10Data()));
+        lineDataSets.add(setLineDataSet(2, mData.getMa20Data()));
 
         return new LineData(lineDataSets);
     }
@@ -300,11 +376,11 @@ public class KLineChartView extends FrameLayout {
         set.setAxisDependency(YAxis.AxisDependency.LEFT);
         // 影线颜色与实体一致
         set.setShadowColorSameAsCandle(true);
-        // 红涨,实体
-        set.setDecreasingColor(mRiseColor);
-        set.setDecreasingPaintStyle(Paint.Style.FILL);
         // 绿跌，实体
-        set.setIncreasingColor(mDropColor);
+        set.setDecreasingColor(mDropColor);
+        set.setDecreasingPaintStyle(Paint.Style.FILL);
+        // 红涨,实体
+        set.setIncreasingColor(mRiseColor);
         set.setIncreasingPaintStyle(Paint.Style.FILL);
         // 不涨不跌，
         set.setNeutralColor(mDropColor);
@@ -322,9 +398,9 @@ public class KLineChartView extends FrameLayout {
      */
     private LineData generateBollData() {
         List<ILineDataSet> lineDataSets = new ArrayList<>();
-        lineDataSets.add(setBollLine(0, mData.getBollDataUP()));
-        lineDataSets.add(setBollLine(1, mData.getBollDataMB()));
-        lineDataSets.add(setBollLine(2, mData.getBollDataDN()));
+        lineDataSets.add(setLineDataSet(0, mData.getBollDataUP()));
+        lineDataSets.add(setLineDataSet(1, mData.getBollDataMB()));
+        lineDataSets.add(setLineDataSet(2, mData.getBollDataDN()));
 
         return new LineData(lineDataSets);
     }
@@ -339,7 +415,7 @@ public class KLineChartView extends FrameLayout {
     private CombinedData generateMACDData(CombinedData data) {
         BarDataSet set = new BarDataSet(mData.getMacdData(), "BarDataSet");
         // 高亮线开启
-        set.setHighlightEnabled(true);
+        set.setHighlightEnabled(false);
         // 是否绘制数值
         set.setDrawValues(false);
         // 使用左轴数据
@@ -350,12 +426,12 @@ public class KLineChartView extends FrameLayout {
         barData.setBarWidth(0.6f);
         // 设置dif、dea曲线
         ArrayList<ILineDataSet> sets = new ArrayList<>();
-        sets.add(setMACDMaLine(0, mData.getDifData()));
-        sets.add(setMACDMaLine(1, mData.getDeaData()));
+        sets.add(setLineDataSet(0, mData.getDifData(), false));
+        sets.add(setLineDataSet(1, mData.getDeaData(), false));
         LineData lineData = new LineData(sets);
 
-        data.setData(barData);
         data.setData(lineData);
+        data.setData(barData);
         return data;
     }
 
@@ -366,9 +442,9 @@ public class KLineChartView extends FrameLayout {
      */
     private LineData generateKDJData() {
         ArrayList<ILineDataSet> sets = new ArrayList<>();
-        sets.add(setBollLine(0, mData.getK()));
-        sets.add(setBollLine(1, mData.getD()));
-        sets.add(setBollLine(2, mData.getJ()));
+        sets.add(setLineDataSet(0, mData.getK(), false));
+        sets.add(setLineDataSet(1, mData.getD(), false));
+        sets.add(setLineDataSet(2, mData.getJ(), false));
         return new LineData(sets);
     }
 
@@ -379,9 +455,9 @@ public class KLineChartView extends FrameLayout {
      */
     private LineData generateRSIData() {
         ArrayList<ILineDataSet> sets = new ArrayList<>();
-        sets.add(setBollLine(0, mData.getRsiData6()));
-        sets.add(setBollLine(1, mData.getRsiData12()));
-        sets.add(setBollLine(2, mData.getRsiData24()));
+        sets.add(setLineDataSet(0, mData.getRsiData6(), false));
+        sets.add(setLineDataSet(1, mData.getRsiData12(), false));
+        sets.add(setLineDataSet(2, mData.getRsiData24(), false));
         return new LineData(sets);
     }
 
@@ -392,8 +468,8 @@ public class KLineChartView extends FrameLayout {
      */
     private CombinedData generateVolData(CombinedData data) {
         BarDataSet set = new BarDataSet(mData.getBarEntries(), "BarDataSet");
-        // 高亮线开启
-        set.setHighlightEnabled(true);
+        // 高亮线关闭，用曲线联动
+        set.setHighlightEnabled(false);
         // 是否绘制数值
         set.setDrawValues(false);
         // 使用左轴数据
@@ -404,99 +480,177 @@ public class KLineChartView extends FrameLayout {
         barData.setBarWidth(0.6f);
 
         ArrayList<ILineDataSet> sets = new ArrayList<>();
-        sets.add(setMaLine(5, mData.getMa5VolData()));
-        sets.add(setMaLine(10, mData.getMa10VolData()));
-        sets.add(setMaLine(20, mData.getMa20VolData()));
+        sets.add(setLineDataSet(0, mData.getMa5VolData(), false));
+        sets.add(setLineDataSet(1, mData.getMa10VolData(), false));
+        sets.add(setLineDataSet(2, mData.getMa20VolData(), false));
         LineData lineData = new LineData(sets);
 
-        data.setData(barData);
         data.setData(lineData);
+        data.setData(barData);
 
         return data;
     }
 
     /**
-     * 构建  折线图DataSet
+     * 构建 曲线
+     * 主图由蜡烛图和曲线展示，曲线不显示高亮
+     * <p>
+     * 副图由曲线与蜡烛图高亮联动
      *
-     * @param ma          5日、10日...MA
+     * @param index       用于区分颜色
      * @param lineEntries data
+     * @param isMainChart 判断是否为主图，主图曲线不显示高亮
      * @return LineDataSet
      */
-    private LineDataSet setMaLine(int ma, List<Entry> lineEntries) {
+    private LineDataSet setLineDataSet(int index, List<Entry> lineEntries, boolean... isMainChart) {
         LineDataSet dataSet = new LineDataSet(lineEntries, "");
-        if (ma == 5) {
-            dataSet.setHighlightEnabled(false);
+        dataSet.setDrawValues(false);
+
+        if (index == 0) {
+            dataSet.setColor(mMa5Color);
+        } else if (index == 1) {
+            dataSet.setColor(mMa10Color);
+        } else if (index == 2) {
+            dataSet.setColor(mMa20Color);
+        }
+
+        dataSet.setLineWidth(1f);
+        dataSet.setDrawCircles(false);
+        dataSet.setAxisDependency(YAxis.AxisDependency.LEFT);
+
+        // index = 0必须，副图只添加一个高亮
+        if (isMainChart.length > 0 && !isMainChart[0] && index == 0) {
+            dataSet.setHighlightEnabled(true);
             dataSet.setDrawHorizontalHighlightIndicator(false);
-        } else {/*此处必须得写*/
+        } else {
             dataSet.setHighlightEnabled(false);
         }
-        dataSet.setDrawValues(false);
-        if (ma == 5) {
-            dataSet.setColor(mMa5Color);
-        } else if (ma == 10) {
-            dataSet.setColor(mMa10Color);
-        } else if (ma == 20) {
-            dataSet.setColor(mMa20Color);
-        }
-        dataSet.setLineWidth(1f);
-        dataSet.setDrawCircles(false);
-        dataSet.setAxisDependency(YAxis.AxisDependency.LEFT);
-
-        dataSet.setHighlightEnabled(false);
-        return dataSet;
-    }
-
-    /**
-     * 构建 布林线DataSet
-     *
-     * @param type        用于区分颜色
-     * @param lineEntries data
-     * @return LineDataSet
-     */
-    private LineDataSet setBollLine(int type, List<Entry> lineEntries) {
-        LineDataSet dataSet = new LineDataSet(lineEntries, "");
-        dataSet.setHighlightEnabled(false);
-        dataSet.setDrawValues(false);
-
-        if (type == 0) {
-            dataSet.setColor(mMa5Color);
-        } else if (type == 1) {
-            dataSet.setColor(mMa10Color);
-        } else if (type == 2) {
-            dataSet.setColor(mMa20Color);
-        }
-
-        dataSet.setLineWidth(1f);
-        dataSet.setDrawCircles(false);
-        dataSet.setAxisDependency(YAxis.AxisDependency.LEFT);
 
         return dataSet;
     }
 
     /**
-     * 构建 MACD  dif、dea曲线
+     * 高亮选择时
      *
-     * @param type        区分颜色
-     * @param lineEntries 曲线数据
-     * @return LineDataSet
+     * @param e The selected Entry
+     * @param h The corresponding highlight object that contains information
      */
-    private LineDataSet setMACDMaLine(int type, List<Entry> lineEntries) {
-        LineDataSet lineDataSetMa = new LineDataSet(lineEntries, "");
-        lineDataSetMa.setHighlightEnabled(false);
-        lineDataSetMa.setDrawValues(false);
+    @Override
+    public void onValueSelected(Entry e, Highlight h) {
+        Highlight highlight = new Highlight(h.getX(), h.getY(), h.getDataSetIndex());
+        mSubChart.highlightValues(new Highlight[]{highlight});
+        mMainChart.highlightValues(new Highlight[]{highlight});
+        updateValue(e.getX());
+        if (mOnValueSelectedListener != null) {
+            mOnValueSelectedListener.onValueSelected(true, mData.getDatas().get((int) e.getX()));
+        }
+    }
 
-        if (type == 0) {
-            lineDataSetMa.setColor(mMa5Color);
+    /**
+     * 高亮选择结束
+     */
+    @Override
+    public void onNothingSelected() {
+        mMainChart.highlightValues(null);
+        mSubChart.highlightValues(null);
+        updateValue(-1);
+        if (mOnValueSelectedListener != null) {
+            mOnValueSelectedListener.onValueSelected(false, null);
+        }
+    }
+
+
+    private void updateValue(float x) {
+        if (x < 0) {
+            // 清空
+            mTvMainValue.setText("");
+            mTvSubValue.setText("");
+            return;
+        }
+        int index = (int) x;
+        String content = "";
+
+        int mainType = mMainText.getType();
+        if (mainType == DataParse.K || mainType == DataParse.BOLL) {
+            String upperValue = String.valueOf(mData.getCandleEntries().get(index).getHigh());
+            String lowerValue = String.valueOf(mData.getCandleEntries().get(index).getLow());
+            // 高低中间值
+            String midValue = (mData.getCandleEntries().get(index).getHigh() + mData.getCandleEntries().get(index).getLow()) / 2 + "";
+            content = getFormatText(mMa10Color, "MID:", midValue) +
+                    getFormatText(mMa5Color, "UPPER:", upperValue) +
+                    getFormatText(mMa20Color, "LOWER:", lowerValue);
+        } else if (mainType == DataParse.MA) {
+            if (index >= mData.getMa5Data().size() || index >= mData.getMa10Data().size() || index >= mData.getMa20Data().size()) {
+                mTvMainValue.setText("");
+                return;
+            }
+            String ma5Value = String.valueOf(mData.getMa5Data().get(index).getY());
+            String ma10Value = String.valueOf(mData.getMa10Data().get(index).getY());
+            String ma20Value = String.valueOf(mData.getMa20Data().get(index).getY());
+            content = getFormatText(mMa5Color, "ma5:", ma5Value) +
+                    getFormatText(mMa10Color, "ma10:", ma10Value) +
+                    getFormatText(mMa20Color, "ma20:", ma20Value);
+        }
+        setCompatHtmlText(content, mTvMainValue);
+
+        // 副图
+        int subType = mSubText.getType();
+        if (subType == DataParse.VOL) {
+            String volValue = String.valueOf(mData.getDatas().get(index).a);
+            content = getFormatText(ContextCompat.getColor(getContext(), R.color.hint_value), "VOL:", volValue);
+        } else if (subType == DataParse.MACD) {
+            String diffValue = String.valueOf(mData.getDifData().get(index).getY());
+            String deaValue = String.valueOf(mData.getDeaData().get(index).getY());
+            String macdValue = String.valueOf(mData.getMacdData().get(index).getY());
+            content = getFormatText(mMa5Color, "DIFF:", diffValue) +
+                    getFormatText(mMa10Color, "DEA:", deaValue) +
+                    getFormatText(mMa20Color, "MACD:", macdValue);
+        } else if (subType == DataParse.KDJ) {
+            String kValue = String.valueOf(mData.getK().get(index).getY());
+            String dValue = String.valueOf(mData.getD().get(index).getY());
+            String jValue = String.valueOf(mData.getJ().get(index).getY());
+            content = getFormatText(mMa5Color, "K:", kValue) +
+                    getFormatText(mMa10Color, "D:", dValue) +
+                    getFormatText(mMa20Color, "J:", jValue);
+        } else if (subType == DataParse.RSI) {
+            if (index >= mData.getRsiData6().size() || index >= mData.getRsiData12().size() || index >= mData.getRsiData24().size()) {
+                mTvSubValue.setText("");
+                return;
+            }
+            String rsi6Value = String.valueOf(mData.getRsiData6().get(index).getY());
+            String rsi12Value = String.valueOf(mData.getRsiData12().get(index).getY());
+            String rsi24Value = String.valueOf(mData.getRsiData24().get(index).getY());
+            content = getFormatText(mMa5Color, "RSI6:", rsi6Value) +
+                    getFormatText(mMa10Color, "RSI12:", rsi12Value) +
+                    getFormatText(mMa20Color, "RSI24:", rsi24Value);
+        }
+        setCompatHtmlText(content, mTvSubValue);
+    }
+
+    private void setCompatHtmlText(String content, TextView tv) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            tv.setText(Html.fromHtml(content, Html.FROM_HTML_MODE_COMPACT));
         } else {
-            lineDataSetMa.setColor(mMa10Color);
+            tv.setText(Html.fromHtml(content));
         }
-
-        lineDataSetMa.setLineWidth(1f);
-        lineDataSetMa.setDrawCircles(false);
-        lineDataSetMa.setAxisDependency(YAxis.AxisDependency.LEFT);
-
-        return lineDataSetMa;
     }
 
+    private String getFormatText(int color, String hint, String value) {
+        try {
+            return "<font color='" + color + "'>" + hint + mDecimalFormat.format(mDecimalFormat.parse(value)) + "  </font>";
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        return "";
+    }
 
+    public interface OnValueSelectedListener {
+        void onValueSelected(boolean isSelected, KLineBean data);
+    }
+
+    private OnValueSelectedListener mOnValueSelectedListener;
+
+    public void setOnValueSelectedListener(OnValueSelectedListener listener) {
+        this.mOnValueSelectedListener = listener;
+    }
 }

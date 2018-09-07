@@ -5,13 +5,13 @@
     <color name="colorAccent">#FF4081</color>
 
 
-
-    <color name="trend_red">#FB4848</color>
-    <color name="trend_green">#41C977</color>
+    <color name="trend_rise">#FB4848</color>
+    <color name="trend_drop">#41C977</color>
     <color name="trend_ma5">#FFAE3C</color>
     <color name="trend_ma10">#26A5FF</color>
     <color name="trend_ma20">#FF40BF</color>
     <color name="chart_border">#B4B4B4</color>
     <color name="chart_grid">#eeeeee</color>
+    <color name="hint_value">#999999</color>
 
 </resources>

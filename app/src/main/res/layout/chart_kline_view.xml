@@ -11,8 +11,17 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
-        android:textSize="12sp"
+        android:textSize="10sp"
         app:layout_constraintLeft_toLeftOf="parent"/>
+
+    <TextView
+        android:id="@+id/tv_main_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:textSize="10sp"
+        app:layout_constraintRight_toRightOf="parent"
+        tools:text="MID:7888"/>
 
     <com.github.mikephil.charting.charts.CombinedChart
         android:id="@+id/main_chart"
@@ -28,9 +37,19 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
-        android:textSize="12sp"
+        android:textSize="10sp"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/main_chart"/>
+
+    <TextView
+        android:id="@+id/tv_sub_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:textSize="10sp"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/main_chart"
+        tools:text="MID:7888"/>
 
     <com.github.mikephil.charting.charts.CombinedChart
         android:id="@+id/sub_chart"

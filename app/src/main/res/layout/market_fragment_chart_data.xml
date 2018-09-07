@@ -2,6 +2,7 @@
 <android.support.constraint.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -9,6 +10,166 @@
         android:id="@+id/tablayout"
         android:layout_width="match_parent"
         android:layout_height="40dp"/>
+
+    <RelativeLayout
+        android:id="@+id/value_layout"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:background="@android:color/white"
+        android:gravity="center_vertical"
+        android:paddingEnd="16dp"
+        android:paddingStart="16dp"
+        android:visibility="gone">
+
+        <RelativeLayout
+            android:id="@+id/linear1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="16dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/text_open"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="开:"
+                android:textColor="@color/hint_value"
+                android:textSize="12sp"/>
+
+            <TextView
+                android:id="@+id/tv_open"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_toEndOf="@id/text_open"
+                android:textColor="@color/hint_value"
+                android:textSize="12sp"
+                tools:text="7566.00"/>
+
+            <TextView
+                android:id="@+id/text_close"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/tv_open"
+                android:text="收:"
+                android:textColor="@color/hint_value"
+                android:textSize="12sp"/>
+
+            <TextView
+                android:id="@+id/tv_close"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/tv_open"
+                android:layout_toEndOf="@id/text_close"
+                android:textColor="@color/hint_value"
+                android:textSize="12sp"
+                tools:text="6999"/>
+
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/linear2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="16dp"
+            android:layout_toEndOf="@id/linear1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/text_high"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="高:"
+                android:textColor="@color/hint_value"
+                android:textSize="12sp"/>
+
+            <TextView
+                android:id="@+id/tv_high"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_toEndOf="@id/text_high"
+                android:textColor="@color/hint_value"
+                android:textSize="12sp"
+                tools:ignore="RtlHardcoded"
+                tools:text="7566.00"/>
+
+            <TextView
+                android:id="@+id/text_low"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/tv_high"
+                android:text="低:"
+                android:textColor="@color/hint_value"
+                android:textSize="12sp"/>
+
+            <TextView
+                android:id="@+id/tv_low"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/tv_high"
+                android:layout_toRightOf="@id/text_low"
+                android:textColor="@color/hint_value"
+                android:textSize="12sp"
+                tools:text="6999.00"/>
+
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/linear3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="16dp"
+            android:layout_toEndOf="@id/linear2"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/text_vol"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="量:"
+                android:textColor="@color/hint_value"
+                android:textSize="12sp"/>
+
+            <TextView
+                android:id="@+id/tv_vol"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_toEndOf="@id/text_vol"
+                android:textColor="@color/hint_value"
+                android:textSize="12sp"
+                tools:text="7566.00"/>
+
+            <TextView
+                android:id="@+id/text_range"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/tv_vol"
+                android:text="幅:"
+                android:textColor="@color/hint_value"
+                android:textSize="12sp"/>
+
+            <TextView
+                android:id="@+id/tv_range"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/tv_vol"
+                android:layout_toEndOf="@id/text_range"
+                android:textColor="@color/hint_value"
+                android:textSize="12sp"
+                tools:text="6999.00"/>
+        </RelativeLayout>
+
+        <TextView
+            android:id="@+id/tv_time"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_alignBottom="@id/linear3"
+            android:layout_alignTop="@id/linear3"
+            android:layout_toEndOf="@id/linear3"
+            android:gravity="center"
+            android:textColor="@color/hint_value"
+            android:textSize="12sp"
+            tools:text="2018-09-05"/>
+    </RelativeLayout>
 
     <cn.sysmaster.kline.view.NoScrollViewPager
         android:id="@+id/viewpager"

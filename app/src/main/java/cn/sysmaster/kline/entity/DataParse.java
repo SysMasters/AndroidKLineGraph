@@ -27,10 +27,6 @@ public class DataParse {
      */
     private ArrayList<BarEntry> barEntries;
     /**
-     * X轴数据
-     */
-    private List<String> xVals;
-    /**
      * k线数据
      */
     private List<CandleEntry> mCandleEntries;
@@ -70,7 +66,6 @@ public class DataParse {
 
     private void initArrays() {
         this.mCandleEntries = new ArrayList<>();
-        this.xVals = new ArrayList<>();
         this.barEntries = new ArrayList<>();
     }
 
@@ -95,7 +90,6 @@ public class DataParse {
             barEntry = new BarEntry(i, chartData.a);
             mCandleEntries.add(entry);
             barEntries.add(barEntry);
-            xVals.add(chartData.t + "");
         }
         initKLineMA(mDatas);
         initBOLL(mDatas);
@@ -226,9 +220,9 @@ public class DataParse {
         VMAEntity vmaEntity10 = new VMAEntity(datas, 10);
         VMAEntity vmaEntity20 = new VMAEntity(datas, 20);
         for (int i = 0; i < vmaEntity5.getMAs().size(); i++) {
-            ma5VolData.add(new Entry(i,vmaEntity5.getMAs().get(i)));
-            ma10VolData.add(new Entry(i,vmaEntity10.getMAs().get(i)));
-            ma20VolData.add(new Entry(i,vmaEntity20.getMAs().get(i)));
+            ma5VolData.add(new Entry(i, vmaEntity5.getMAs().get(i)));
+            ma10VolData.add(new Entry(i, vmaEntity10.getMAs().get(i)));
+            ma20VolData.add(new Entry(i, vmaEntity20.getMAs().get(i)));
         }
 
     }
@@ -275,10 +269,6 @@ public class DataParse {
 
     public List<Entry> getDeaData() {
         return deaData;
-    }
-
-    public List<String> getxVals() {
-        return xVals;
     }
 
     public List<Entry> getK() {
