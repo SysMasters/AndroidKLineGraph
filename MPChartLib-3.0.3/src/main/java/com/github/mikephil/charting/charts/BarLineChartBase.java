@@ -278,6 +278,9 @@ public abstract class BarLineChartBase<T extends BarLineScatterCandleBubbleData<
             Log.i(LOG_TAG, "Drawtime: " + drawtime + " ms, average: " + average + " ms, cycles: "
                     + drawCycles);
         }
+        if (mDrawListener != null){
+            mDrawListener.onDrawFinished(null);
+        }
     }
 
     /**

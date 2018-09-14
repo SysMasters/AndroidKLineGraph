@@ -23,6 +23,7 @@ import com.github.mikephil.charting.data.BarEntry;
 import com.github.mikephil.charting.data.CandleData;
 import com.github.mikephil.charting.data.CandleDataSet;
 import com.github.mikephil.charting.data.CombinedData;
+import com.github.mikephil.charting.data.DataSet;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
@@ -31,6 +32,7 @@ import com.github.mikephil.charting.highlight.Highlight;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.github.mikephil.charting.listener.ChartTouchListener;
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
+import com.github.mikephil.charting.listener.OnDrawListener;
 
 import java.text.DecimalFormat;
 import java.text.ParseException;
@@ -42,7 +44,7 @@ import cn.sysmaster.kline.entity.DataParse;
 import cn.sysmaster.kline.entity.KLineBean;
 import cn.sysmaster.kline.listener.ChartInfoViewHandler;
 import cn.sysmaster.kline.listener.CoupleChartGestureListener;
-import cn.sysmaster.kline.util.DateUtil;
+import cn.sysmaster.kline.util.DateUtils;
 
 /**
  * @author wanglibo
@@ -54,7 +56,11 @@ public class KLineChartView extends FrameLayout implements OnChartValueSelectedL
     private CombinedChart mMainChart, mSubChart;
     private MainGraphTextView mMainText;
     private SubGraphTextView mSubText;
-    private TextView mTvMainValue, mTvSubValue;
+    private TextView mTvMainValue, mTvSubValue, mTvLoading;
+    /**
+     * 图表是否移动到最后
+     */
+    private boolean isMoveToLast = true;
 
 
     /**
@@ -67,7 +73,7 @@ public class KLineChartView extends FrameLayout implements OnChartValueSelectedL
     private int mRiseColor, mDropColor;
 
     /**
-     * 移动平均线颜色
+     * 平均线颜色
      */
     private int mMa5Color, mMa10Color, mMa20Color;
 
@@ -148,15 +154,18 @@ public class KLineChartView extends FrameLayout implements OnChartValueSelectedL
         mSubText = findViewById(R.id.tv_sub_text);
         mTvMainValue = findViewById(R.id.tv_main_value);
         mTvSubValue = findViewById(R.id.tv_sub_value);
+        mTvLoading = findViewById(R.id.tv_loading);
         initChartStyle(mMainChart);
         initChartStyle(mSubChart);
+        // 解决时间轴底部显示不全
+        mSubChart.setExtraOffsets(0, 0, 0, 5);
         // 显示副图x轴时间
         mSubChart.getXAxis().setDrawLabels(true);
         // 格式化时间
         mSubChart.getXAxis().setValueFormatter(new IAxisValueFormatter() {
             @Override
             public String getFormattedValue(float value, AxisBase axis) {
-                return DateUtil.timeStamp2Date(mData.getDatas().get((int) value).t);
+                return DateUtils.timeStamp2Date(mData.getDatas().get((int) value).t);
             }
         });
         setChartListener();
@@ -208,6 +217,16 @@ public class KLineChartView extends FrameLayout implements OnChartValueSelectedL
         mSubChart.setOnChartValueSelectedListener(this);
         mMainChart.setOnTouchListener(new ChartInfoViewHandler(mMainChart));
         mSubChart.setOnTouchListener(new ChartInfoViewHandler(mSubChart));
+        mSubChart.setOnDrawListener(new OnDrawListener() {
+            @Override
+            public void onEntryAdded(Entry entry) {}
+            @Override
+            public void onEntryMoved(Entry entry) {}
+            @Override
+            public void onDrawFinished(DataSet<?> dataSet) {
+                mTvLoading.setVisibility(GONE);
+            }
+        });
     }
 
 
@@ -222,6 +241,8 @@ public class KLineChartView extends FrameLayout implements OnChartValueSelectedL
         initMacdBarColor();
         loadMainChartData();
         loadSubChartData();
+        // 只在第一次加载时，移动和放大图表
+        isMoveToLast = false;
     }
 
     /**
@@ -287,13 +308,20 @@ public class KLineChartView extends FrameLayout implements OnChartValueSelectedL
         // github  issues/2553,2641
         chart.getXAxis().setAxisMinimum(data.getXMin() - 0.5f);
         chart.getXAxis().setAxisMaximum(data.getXMax() + 0.5f);
+        if (isMoveToLast) {
+            // 移动到最后
+            chart.moveViewToX(mData.getCandleEntries().size() - 1);
+            // 放大
+            chart.getViewPortHandler().getMatrixTouch().postScale(5f, 1f);
+        }
+        // 清空数据，防止图表类型不一值报空
         chart.setData(null);
         chart.setData(data);
 
+        //        chart.setVisibleXRange(70, 0);
+
         chart.notifyDataSetChanged();
         chart.invalidate();
-        chart.setVisibleXRange(70, 0);
-        chart.moveViewToX(mData.getCandleEntries().size() - 1);
     }
 
     private void loadMainChartData() {
@@ -384,8 +412,9 @@ public class KLineChartView extends FrameLayout implements OnChartValueSelectedL
         set.setIncreasingPaintStyle(Paint.Style.FILL);
         // 不涨不跌，
         set.setNeutralColor(mDropColor);
-        // 不显示数值
+        // 显示数值
         set.setDrawValues(true);
+        set.setValueTextSize(10f);
         candleData.addDataSet(set);
 
         return candleData;
@@ -637,7 +666,11 @@ public class KLineChartView extends FrameLayout implements OnChartValueSelectedL
 
     private String getFormatText(int color, String hint, String value) {
         try {
-            return "<font color='" + color + "'>" + hint + mDecimalFormat.format(mDecimalFormat.parse(value)) + "  </font>";
+            String text = mDecimalFormat.format(mDecimalFormat.parse(value));
+            if ("NaN".equals(text) || "0.00".equals(text)) {
+                text = "--";
+            }
+            return "<font color='" + color + "'>" + hint + text + "  </font>";
         } catch (ParseException e) {
             e.printStackTrace();
         }

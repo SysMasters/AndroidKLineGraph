@@ -116,15 +116,9 @@ public class DataParse {
         KMAEntity kmaEntity10 = new KMAEntity(datas, 10);
         KMAEntity kmaEntity20 = new KMAEntity(datas, 20);
         for (int i = 0; i < kmaEntity5.getMAs().size(); i++) {
-            if (i >= 5) {
-                ma5Data.add(new Entry(i, kmaEntity5.getMAs().get(i)));
-            }
-            if (i >= 10) {
-                ma10Data.add(new Entry(i, kmaEntity10.getMAs().get(i)));
-            }
-            if (i >= 20) {
-                ma20Data.add(new Entry(i, kmaEntity20.getMAs().get(i)));
-            }
+            ma5Data.add(new Entry(i, kmaEntity5.getMAs().get(i)));
+            ma10Data.add(new Entry(i, kmaEntity10.getMAs().get(i)));
+            ma20Data.add(new Entry(i, kmaEntity20.getMAs().get(i)));
         }
 
     }

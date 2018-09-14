@@ -46,6 +46,7 @@ public class KLineChartFragment extends Fragment implements KLineChartView.OnVal
         mChartView = view.findViewById(R.id.kline_chart_view);
         mChartView.setOnValueSelectedListener(this);
         requestKlineData();
+
     }
 
 

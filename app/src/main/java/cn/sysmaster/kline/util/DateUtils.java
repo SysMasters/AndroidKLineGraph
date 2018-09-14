@@ -7,7 +7,7 @@ import java.util.Calendar;
  * @date 2018/9/3
  * @describe
  */
-public class DateUtil {
+public class DateUtils {
 
     public static String timeStamp2Date(long timeStamp) {
 
@@ -15,7 +15,7 @@ public class DateUtil {
         calendar.setTimeInMillis(timeStamp * 1000);
         int year = calendar.get(Calendar.YEAR);
         int month = calendar.get(Calendar.MONTH) + 1;
-        int day = calendar.get(Calendar.DAY_OF_MONTH) + 1;
+        int day = calendar.get(Calendar.DAY_OF_MONTH);
 
         return year + "-" + (month >= 10 ? month : "0" + month) + "-" + (day >= 10 ? day : "0" + day);
     }

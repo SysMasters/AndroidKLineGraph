@@ -13,7 +13,7 @@ import cn.sysmaster.kline.R;
 public class TimeLineChartFragment extends Fragment {
 
 
-    public static Fragment newInstance() {
+    public static TimeLineChartFragment newInstance() {
         return new TimeLineChartFragment();
     }
     @Nullable

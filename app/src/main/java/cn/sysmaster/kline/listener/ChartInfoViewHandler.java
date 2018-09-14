@@ -26,6 +26,10 @@ public class ChartInfoViewHandler implements View.OnTouchListener {
                 super.onLongPress(e);
                 mIsLongPress = true;
                 Highlight h = mChart.getHighlightByTouchPoint(e.getX(), e.getY());
+                if (h == null) {
+                    h = new Highlight(e.getX(), 0f, -1);
+                    h.setDataIndex((int) e.getX());
+                }
                 if (h != null) {
                     mChart.highlightValue(h, true);
                     mChart.disableScroll();

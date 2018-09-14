@@ -15,7 +15,7 @@ public class RSIEntity {
      * @param kLineBeens
      * @param n          几日
      */
-    public RSIEntity(List<KLineBean> kLineBeens, int n) {
+    public RSIEntity(List<KLineBean> kLineBeens, float n) {
         this(kLineBeens, n, 100);
     }
 
@@ -24,7 +24,7 @@ public class RSIEntity {
      * @param days   几日
      * @param defult 不足N日时的默认值
      */
-    public RSIEntity(List<KLineBean> list, int days, float defult) {
+    public RSIEntity(List<KLineBean> list, float days, float defult) {
         RSIs = new ArrayList();
 
         if (list == null) {
@@ -45,11 +45,18 @@ public class RSIEntity {
             smaMax = countSMA((float) Math.max(close - lc, 0d), days, 1, smaMax);
             smaAbs = countSMA(Math.abs(close - lc), days, 1, smaAbs);
             rsi = smaMax / smaAbs * 100;
-            RSIs.add(rsi);
+            if (days >= i) {
+                RSIs.add(Float.NaN);
+            } else {
+                if (rsi == 0) {
+                    rsi = Float.NaN;
+                }
+                RSIs.add(rsi);
+            }
         }
         int size = list.size() - RSIs.size();
         for (int i = 0; i < size; i++) {
-            RSIs.add(0, 0f);
+            RSIs.add(0, Float.NaN);
         }
     }
 

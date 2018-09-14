@@ -13,5 +13,9 @@
     <color name="chart_border">#B4B4B4</color>
     <color name="chart_grid">#eeeeee</color>
     <color name="hint_value">#999999</color>
+    <color name="white">#ffffff</color>
+    <color name="black">#000000</color>
+    <color name="theme_color">#ffF39800</color>
+
 
 </resources>
